@@ -1,8 +1,11 @@
 using Hellang.Middleware.ProblemDetails;
 using API.Configuration.Authorization;
 using API.Configuration.ExecutionContext;
+using API.Configuration.Validation;
 using BuildingBlocks.Application;
+using BuildingBlocks.Domain;
 using Microsoft.AspNetCore.Authorization;
+using Modules.UserAcess.Infrastructure.Configuration;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -67,7 +70,7 @@ services.AddAuthorization(options =>
         policyBuilder.AddAuthenticationSchemes("Bearer");
     });
 });
-services.AddScoped<IAuthorizationHandler, HasPermissionAuthorizationRequirement.HasPermissionAuthorizationHandler>();
+services.AddScoped<IAuthorizationHandler, HasPermissionAuthorizationHandler>();
 
 // Initialize modules (using reflection or direct DI)
 InitializeModules(services, configuration);
@@ -106,11 +109,11 @@ void InitializeModules(IServiceCollection services, IConfiguration configuration
 
     var connectionString = configuration.GetConnectionString("DbConnectionString");
 
-    // UserAccessStartup.Initialize(
-    //     connectionString,
-    //     executionContextAccessor,
-    //     Log.Logger,
-    //     configuration["Security:TextEncryptionKey"],
-    //     null,
-    //     null);
+    UserAccessStartup.Initialize(
+        connectionString,
+        executionContextAccessor,
+        Log.Logger,
+        configuration["Security:TextEncryptionKey"],
+        null,
+        null);
 }

@@ -1,4 +1,7 @@
-﻿*.swp
+﻿/API/logs/logs
+
+
+*.swp
 *.*~
 project.lock.json
 .DS_Store

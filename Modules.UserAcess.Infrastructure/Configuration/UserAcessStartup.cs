@@ -2,6 +2,7 @@
 using BuildingBlocks.Application;
 using BuildingBlocks.Infrastructure.EventBus;
 using Microsoft.Extensions.DependencyInjection;
+using Modules.UserAcess.Infrastructure.Configuration.DataAcess;
 using Modules.UserAcess.Infrastructure.Configuration.EventBus;
 using Modules.UserAcess.Infrastructure.Configuration.Quartz;
 using Serilog;
@@ -47,7 +48,9 @@ public class UserAccessStartup
         LoggingModule.Register(serviceCollection, logger.ForContext("Module", "UserAccess"));
 
         var loggerFactory = new Serilog.Extensions.Logging.SerilogLoggerFactory(logger);
-        serviceCollection.RegisterModule(new DataAccessModule(connectionString, loggerFactory));
+
+        DataAccessModule.Register(serviceCollection, connectionString, loggerFactory);
+        // serviceCollection.RegisterModule(new DataAccessModule(connectionString, loggerFactory));
         serviceCollection.RegisterModule(new ProcessingModule());
         serviceCollection.RegisterModule(new EventsBusModule(eventsBus));
         serviceCollection.RegisterModule(new MediatorModule());

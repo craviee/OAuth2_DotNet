@@ -1,6 +1,6 @@
 ﻿using System.Data;
 
-namespace Modules.UserAcess.Application.Data;
+namespace BuildingBlocks.Application.Data;
 
 public interface ISqlConnectionFactory
 {

@@ -1,7 +1,7 @@
-﻿using BuildingBlocks.Infrastructure.EventBus;
+﻿using BuildingBlocks.Application.Data;
+using BuildingBlocks.Infrastructure.EventBus;
 using BuildingBlocks.Infrastructure.Serialization;
 using Microsoft.Extensions.DependencyInjection;
-using Modules.UserAcess.Application.Data;
 using Newtonsoft.Json;
 using Dapper;
 

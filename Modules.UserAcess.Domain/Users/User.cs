@@ -1,4 +1,7 @@
-﻿namespace Modules.UserAcess.Domain.Users;
+﻿using BuildingBlocks.Domain;
+using Modules.UserAcess.Domain.Users.Events;
+
+namespace Modules.UserAcess.Domain.Users;
 
     public class User : Entity, IAggregateRoot
     {

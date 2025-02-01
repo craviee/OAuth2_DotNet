@@ -36,7 +36,7 @@ x86/
 build/
 bld/
 [Bb]in/
-**/[Oo]bj/
+[Oo]bj/
 [Oo]ut/
 [Ll]ogs/
 msbuild.log

@@ -1,18 +1,29 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+string apiVersionName = "v1";
+builder.Services.AddSwaggerGen(c =>
 {
-    app.MapOpenApi();
-}
+    c.SwaggerDoc(apiVersionName, new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "OAuth Sample API",
+        Version = apiVersionName,
+        Description = "Simple API using OAuth",
+    });
+});
+
+WebApplication app = builder.Build();
+
+app.UseSwagger(c =>
+{
+    c.RouteTemplate = "swagger/{documentName}/swagger.json";
+});
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint($"/swagger/{apiVersionName}/swagger.json", apiVersionName);
+    options.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
+});
 
 app.UseHttpsRedirection();
 

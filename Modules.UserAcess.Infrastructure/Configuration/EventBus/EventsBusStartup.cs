@@ -14,7 +14,7 @@ public static class EventsBusStartup
 
     private static void SubscribeToIntegrationEvents(ILogger logger)
     {
-        var eventBus = UserAccessCompositionRoot.BeginLifetimeScope().ServiceProvider.GetRequiredService<IEventsBus>();
+        // var eventBus = UserAccessCompositionRoot.BeginLifetimeScope().ServiceProvider.GetRequiredService<IEventsBus>();
 
         // SubscribeToIntegrationEvent<MemberCreatedIntegrationEvent>(eventBus, logger);
     }

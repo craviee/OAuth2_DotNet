@@ -52,16 +52,17 @@ public class UserAccessStartup
 
         DataAccessModule.Register(serviceCollection, connectionString, loggerFactory);
         // serviceCollection.RegisterModule(new DataAccessModule(connectionString, loggerFactory));
-        ProcessingModule.Register(serviceCollection);
-        serviceCollection.RegisterModule(new ProcessingModule());
-        serviceCollection.RegisterModule(new EventsBusModule(eventsBus));
-        serviceCollection.RegisterModule(new MediatorModule());
-        serviceCollection.RegisterModule(new OutboxModule(new BiDictionary<string, Type>()));
+        // ProcessingModule.Register(serviceCollection);
+        // serviceCollection.RegisterModule(new ProcessingModule());
+        // serviceCollection.RegisterModule(new EventsBusModule(eventsBus));
+        // serviceCollection.RegisterModule(new MediatorModule());
+        // serviceCollection.RegisterModule(new OutboxModule(new BiDictionary<string, Type>()));
+        //
+        // serviceCollection.RegisterModule(new QuartzModule());
+        // serviceCollection.RegisterModule(new SecurityModule(textEncryptionKey));
 
-        serviceCollection.RegisterModule(new QuartzModule());
-        serviceCollection.RegisterModule(new SecurityModule(textEncryptionKey));
-
-        serviceCollection.RegisterInstance(executionContextAccessor);
+        // serviceCollection.RegisterInstance(executionContextAccessor);
+        serviceCollection.AddSingleton(executionContextAccessor);
 
         _serviceProvider = serviceCollection.BuildServiceProvider();
 

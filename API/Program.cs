@@ -104,16 +104,16 @@ app.Run();
 // Helper method to initialize modules
 void InitializeModules(IServiceCollection services, IConfiguration configuration)
 {
-    var executionContextAccessor = new ExecutionContextAccessor(
-        services.BuildServiceProvider().GetRequiredService<IHttpContextAccessor>());
-
-    var connectionString = configuration.GetConnectionString("DbConnectionString");
-
-    UserAccessStartup.Initialize(
-        connectionString,
-        executionContextAccessor,
-        Log.Logger,
-        configuration["Security:TextEncryptionKey"],
-        null,
-        null);
+    // var executionContextAccessor = new ExecutionContextAccessor(
+    //     services.BuildServiceProvider().GetRequiredService<IHttpContextAccessor>());
+    //
+    // var connectionString = configuration.GetConnectionString("DbConnectionString");
+    //
+    // UserAccessStartup.Initialize(
+    //     connectionString,
+    //     executionContextAccessor,
+    //     Log.Logger,
+    //     configuration["Security:TextEncryptionKey"],
+    //     null,
+    //     null);
 }

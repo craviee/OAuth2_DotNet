@@ -66,7 +66,7 @@ public class UserController : ControllerBase
             Expires = DateTime.UtcNow.AddHours(1),
             Issuer = "app",
             Audience = "app",
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);

@@ -3,49 +3,51 @@ using API;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
-Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
+IdentityModelEventSource.ShowPII = true;
+IdentityModelEventSource.LogCompleteSecurityArtifact = true;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
 string apiVersionName = "v1";
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc(apiVersionName, new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "OAuth Sample API",
-        Version = apiVersionName,
-        Description = "Simple API using OAuth",
-    });
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter 'Bearer' [space] and then your valid JWT token.\n\nExample: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] {}
-        }
-    });
-});
+// builder.Services.AddSwaggerGen(options =>
+// {
+//     options.SwaggerDoc(apiVersionName, new Microsoft.OpenApi.Models.OpenApiInfo
+//     {
+//         Title = "OAuth Sample API",
+//         Version = apiVersionName,
+//         Description = "Simple API using OAuth",
+//     });
+//     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+//     {
+//         Name = "Authorization",
+//         Type = SecuritySchemeType.ApiKey,
+//         // Scheme = "Bearer",
+//         // BearerFormat = "JWT",
+//         In = ParameterLocation.Header,
+//         Description = "Enter 'Bearer' [space] and then your valid JWT token.\n\nExample: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+//     });
+//
+//     options.AddSecurityRequirement(new OpenApiSecurityRequirement
+//     {
+//         {
+//             new OpenApiSecurityScheme
+//             {
+//                 Reference = new OpenApiReference
+//                 {
+//                     Type = ReferenceType.SecurityScheme,
+//                     Id = "Bearer"
+//                 }
+//             },
+//             new string[] {}
+//         }
+//     });
+// });
 
 // Add DbContext for Identity
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -68,19 +70,20 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>()
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = "Bearer";
-    options.DefaultChallengeScheme = "Bearer";
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer("Bearer", options =>
+.AddJwtBearer(options =>
 {
+    options.RequireHttpsMetadata = false;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = false,
         ValidateAudience = false,
         ValidateLifetime = false,
-        ValidateIssuerSigningKey = false,
-        ValidIssuer = "app", // Issuer (your app's name)
-        ValidAudience = "app", // Audience (your app's name)
+        ValidateIssuerSigningKey = true,
+        // ValidIssuer = "app", // Issuer (your app's name)
+        // ValidAudience = "app", // Audience (your app's name)
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("YourSuperSecretKeyThatIsAtLeast32CharactersLong")) // Key
     };
     options.Events = new JwtBearerEvents
@@ -100,21 +103,21 @@ builder.Services.AddAuthentication(options =>
 
 WebApplication app = builder.Build();
 
-app.UseSwagger(c =>
-{
-    c.RouteTemplate = "swagger/{documentName}/swagger.json";
-});
-app.UseSwaggerUI(options =>
-{
-    options.SwaggerEndpoint($"/swagger/{apiVersionName}/swagger.json", apiVersionName);
-    options.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
-});
+// app.UseSwagger(c =>
+// {
+//     c.RouteTemplate = "swagger/{documentName}/swagger.json";
+// });
+// app.UseSwaggerUI(options =>
+// {
+//     options.SwaggerEndpoint($"/swagger/{apiVersionName}/swagger.json", apiVersionName);
+//     options.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
+// });
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
+// app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
+app.UseAuthorization();
 
 app.MapControllers();
 

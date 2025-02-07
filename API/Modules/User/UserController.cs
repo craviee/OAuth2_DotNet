@@ -56,27 +56,43 @@ public class UserController : ControllerBase
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes("YourSuperSecretKeyThatIsAtLeast32CharactersLong");
 
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.NameIdentifier, user.Id)
-            }),
-            Expires = DateTime.UtcNow.AddHours(1),
-            Issuer = "app",
-            Audience = "app",
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
-        };
+        var now = DateTime.UtcNow;
 
-        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.NameId, user.Id),
+            new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(),
+                ClaimValueTypes.Integer64)
+        };
+        
+        var token = new JwtSecurityToken(
+            issuer: "app", // Optional
+            audience: null, // Optional
+            claims: claims,
+            notBefore: null, // Avoid setting "nbf"
+            expires: null, // Avoid setting "exp"
+            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
+        );
+        
+        // var tokenDescriptor = new SecurityTokenDescriptor
+        // {
+        //     Subject = new ClaimsIdentity(new[]
+        //     {
+        //         new Claim(ClaimTypes.NameIdentifier, user.Id),
+        //         new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+        //     }),
+        //     Issuer = "app",
+        //     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
+        // };
+
+        // var token = tokenHandler.CreateToken(tokenDescriptor);
         
         Console.WriteLine("Generated Token: " + tokenHandler.WriteToken(token));
 
         return Ok(new
         {
             token = tokenHandler.WriteToken(token),
-            expiration = token.ValidTo
+            // expiration = token.ValidTo
         });
     }
 }

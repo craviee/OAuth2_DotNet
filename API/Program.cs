@@ -1,57 +1,56 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using API;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Logging;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-
-IdentityModelEventSource.ShowPII = true;
-IdentityModelEventSource.LogCompleteSecurityArtifact = true;
+using JwtRegisteredClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
 string apiVersionName = "v1";
-// builder.Services.AddSwaggerGen(options =>
-// {
-//     options.SwaggerDoc(apiVersionName, new Microsoft.OpenApi.Models.OpenApiInfo
-//     {
-//         Title = "OAuth Sample API",
-//         Version = apiVersionName,
-//         Description = "Simple API using OAuth",
-//     });
-//     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-//     {
-//         Name = "Authorization",
-//         Type = SecuritySchemeType.ApiKey,
-//         // Scheme = "Bearer",
-//         // BearerFormat = "JWT",
-//         In = ParameterLocation.Header,
-//         Description = "Enter 'Bearer' [space] and then your valid JWT token.\n\nExample: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-//     });
-//
-//     options.AddSecurityRequirement(new OpenApiSecurityRequirement
-//     {
-//         {
-//             new OpenApiSecurityScheme
-//             {
-//                 Reference = new OpenApiReference
-//                 {
-//                     Type = ReferenceType.SecurityScheme,
-//                     Id = "Bearer"
-//                 }
-//             },
-//             new string[] {}
-//         }
-//     });
-// });
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc(apiVersionName, new OpenApiInfo
+    {
+        Title = "OAuth Sample API",
+        Version = apiVersionName,
+        Description = "Simple API using OAuth",
+    });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter your valid JWT token.\n\nExample: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer",
+                },
+            }, []
+        }
+    });
+});
 
 // Add DbContext for Identity
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultSqlServerConnection")));
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -78,20 +77,61 @@ builder.Services.AddAuthentication(options =>
     options.RequireHttpsMetadata = false;
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = false,
+        ValidateIssuer = true,
+        ValidIssuer = "app",
         ValidateAudience = false,
         ValidateLifetime = false,
         ValidateIssuerSigningKey = true,
-        // ValidIssuer = "app", // Issuer (your app's name)
-        // ValidAudience = "app", // Audience (your app's name)
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("YourSuperSecretKeyThatIsAtLeast32CharactersLong")) // Key
+        IssuerSigningKey = new SymmetricSecurityKey("YourSuperSecretKeyThatIsAtLeast32CharactersLong"u8.ToArray()),
+        ClockSkew = TimeSpan.Zero,
+        LifetimeValidator = (notBefore, expires, securityToken, validationParameters) =>
+        {
+            if ((securityToken as JsonWebToken)!.Typ == "JWT")
+            {
+                if (securityToken is JsonWebToken token)
+                {
+                    DateTime now = DateTime.UtcNow;
+                    DateTime iat = token.IssuedAt.ToUniversalTime();
+                    if(now >= iat.AddMinutes(1))
+                        throw new SecurityTokenExpiredException("The token has expired.");
+                    return true;
+                }
+            }
+            return false;
+        }
+        
     };
     options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = context =>
         {
             Console.WriteLine("Authentication failed: " + context.Exception.Message);
-            return Task.CompletedTask;
+            if (context.Exception is SecurityTokenExpiredException)
+            {
+                context.Response.Headers.Add("Token-Error", "expired");
+                context.Response.Headers.Add("Access-Control-Expose-Headers", "Token-Error");
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+
+                var response = new
+                {
+                    error = "invalid_token",
+                    error_description = "The token is expired. Please obtain a new token."
+                };
+
+                return context.Response.WriteAsJsonAsync(response);
+            }
+
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+
+            var genericResponse = new
+            {
+                error = "invalid_token",
+                error_description = "The token is invalid or has failed validation."
+            };
+
+            return context.Response.WriteAsJsonAsync(genericResponse);
         },
         OnChallenge = context =>
         {
@@ -103,17 +143,17 @@ builder.Services.AddAuthentication(options =>
 
 WebApplication app = builder.Build();
 
-// app.UseSwagger(c =>
-// {
-//     c.RouteTemplate = "swagger/{documentName}/swagger.json";
-// });
-// app.UseSwaggerUI(options =>
-// {
-//     options.SwaggerEndpoint($"/swagger/{apiVersionName}/swagger.json", apiVersionName);
-//     options.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
-// });
+app.UseSwagger(c =>
+{
+    c.RouteTemplate = "swagger/{documentName}/swagger.json";
+});
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint($"/swagger/{apiVersionName}/swagger.json", apiVersionName);
+    options.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
+});
 
-// app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 
 app.UseAuthentication();
 

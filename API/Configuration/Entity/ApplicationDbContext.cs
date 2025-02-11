@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace API;
+namespace API.Configuration.Entity;
 
 public class ApplicationDbContext : IdentityDbContext
 {

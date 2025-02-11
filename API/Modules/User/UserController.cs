@@ -1,4 +1,9 @@
-﻿namespace API.Modules.User;
+﻿using System.Configuration;
+using API.Configuration.Settings;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Protocols.Configuration;
+
+namespace API.Modules.User;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -9,35 +14,28 @@ using System.Text;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserController : ControllerBase
+public class UserController(UserManager<IdentityUser> userManager, IOptions<JwtSettings> jwtSettings)
+    : ControllerBase
 {
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly JwtSettings _jwtSettings = jwtSettings.Value;
 
-    public UserController(UserManager<IdentityUser> userManager)
-    {
-        _userManager = userManager;
-    }
-    
     [HttpPost]
     [Route("create")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
-        // Create a new user object
         var user = new IdentityUser
         {
             UserName = request.Username,
             Email = request.Email
         };
-
-        // Add the user to the database and set their password
-        var result = await _userManager.CreateAsync(user, request.Password);
+        
+        var result = await userManager.CreateAsync(user, request.Password);
 
         if (result.Succeeded)
         {
             return Ok(new { message = "User created successfully" });
         }
-
-        // Handle errors (e.g., username already exists, password too weak, etc.)
+        
         return BadRequest(new { errors = result.Errors });
     }
 
@@ -46,15 +44,15 @@ public class UserController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         // Find user by username
-        var user = await _userManager.FindByNameAsync(request.Username);
-        if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+        var user = await userManager.FindByNameAsync(request.Username);
+        if (user == null || !await userManager.CheckPasswordAsync(user, request.Password))
         {
             return Unauthorized(new { message = "Invalid username or password" });
         }
 
         // Generate JWT token
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes("YourSuperSecretKeyThatIsAtLeast32CharactersLong");
+        var key = Encoding.UTF8.GetBytes(_jwtSettings?.SecurityKey ?? throw new InvalidConfigurationException());
 
         var now = DateTime.UtcNow;
 
@@ -66,33 +64,17 @@ public class UserController : ControllerBase
         };
         
         var token = new JwtSecurityToken(
-            issuer: "app", // Optional
-            audience: null, // Optional
+            issuer: _jwtSettings.ValidIssuer,
+            audience: null,
             claims: claims,
-            notBefore: null, // Avoid setting "nbf"
-            expires: null, // Avoid setting "exp"
+            notBefore: null,
+            expires: null,
             signingCredentials: new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
         );
-        
-        // var tokenDescriptor = new SecurityTokenDescriptor
-        // {
-        //     Subject = new ClaimsIdentity(new[]
-        //     {
-        //         new Claim(ClaimTypes.NameIdentifier, user.Id),
-        //         new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
-        //     }),
-        //     Issuer = "app",
-        //     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
-        // };
-
-        // var token = tokenHandler.CreateToken(tokenDescriptor);
-        
-        Console.WriteLine("Generated Token: " + tokenHandler.WriteToken(token));
 
         return Ok(new
         {
             token = tokenHandler.WriteToken(token),
-            // expiration = token.ValidTo
         });
     }
 }

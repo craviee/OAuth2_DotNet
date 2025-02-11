@@ -2,5 +2,5 @@
 
 public class ApiSettings
 {
-    public string ApiVersion { get; set; } = "v1";
+    public string? ApiVersion { get; set; }
 }

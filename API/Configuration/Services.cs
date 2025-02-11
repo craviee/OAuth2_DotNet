@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using API.Configuration.Entity;
 using API.Configuration.Settings;
 using API.Configuration.Swagger;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -7,22 +8,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Protocols.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using ConfigurationManager = Microsoft.Extensions.Configuration.ConfigurationManager;
 
 namespace API.Configuration;
 
 public static class Services
 {
-
- 
-    public static void AddServices(this IServiceCollection services)
+    public static void AddServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var apiSettings = configuration.GetSection("JwtSettings").Get<ApiSettings>();
+        var apiSettings = configuration.GetSection("ApiSettings").Get<ApiSettings>();
         
-        services.AddCustomSwaggerGen(configurationManager["ApiVersion"] ?? throw new InvalidConfigurationException());
+        // services.AddCustomSwaggerGen(configurationManager["ApiVersion"] ?? throw new InvalidConfigurationException());
+        services.AddCustomSwaggerGen(apiSettings?.ApiVersion ?? throw new InvalidConfigurationException());
 
+        var databaseSettings = configuration.GetSection("DatabaseSettings").Get<DatabaseSettings>();
+        
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(configurationManager.GetConnectionString("DefaultSqlServerConnection")));
+            options.UseSqlServer(databaseSettings?.DefaultSqlServerConnection ?? throw new InvalidConfigurationException()));
 
         services.Configure<IdentityOptions>(options =>
         {
@@ -47,12 +48,13 @@ public static class Services
             .AddJwtBearer(options =>
             {
                 options.RequireHttpsMetadata = false;
-                byte[] key = Encoding.UTF8.GetBytes(configurationManager["JwtSecurityKey"] ??
+                var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>();
+                byte[] key = Encoding.UTF8.GetBytes(jwtSettings?.SecurityKey ??
                                                     throw new InvalidConfigurationException());
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = "app",
+                    ValidIssuer = jwtSettings.ValidIssuer ?? throw new InvalidConfigurationException(),
                     ValidateAudience = false,
                     ValidateLifetime = false,
                     ValidateIssuerSigningKey = true,
@@ -66,7 +68,7 @@ public static class Services
                             {
                                 DateTime now = DateTime.UtcNow;
                                 DateTime iat = token.IssuedAt.ToUniversalTime();
-                                if (now >= iat.AddMinutes(1))
+                                if (now >= iat.AddMinutes(jwtSettings.TokenLifetimeMinutes ?? throw new InvalidConfigurationException()))
                                     throw new SecurityTokenExpiredException("The token has expired.");
                                 return true;
                             }

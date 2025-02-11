@@ -2,6 +2,7 @@
 
 public class JwtSettings
 {
-    public string JwtSecurityKey { get; set; } = string.Empty;
-    public string JwtIssuer { get; set; } = string.Empty;
+    public string? SecurityKey { get; set; }
+    public string? ValidIssuer { get; set; }
+    public int? TokenLifetimeMinutes { get; set; }
 }

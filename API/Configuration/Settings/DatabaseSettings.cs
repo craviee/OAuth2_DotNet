@@ -2,5 +2,5 @@
 
 public class DatabaseSettings
 {
-    public string DefaultSqlConnectionString { get; set; } = string.Empty;
+    public string? DefaultSqlServerConnection { get; set; }
 }

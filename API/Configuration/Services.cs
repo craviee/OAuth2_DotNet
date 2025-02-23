@@ -17,7 +17,6 @@ public static class Services
     {
         var apiSettings = configuration.GetSection("ApiSettings").Get<ApiSettings>();
         
-        // services.AddCustomSwaggerGen(configurationManager["ApiVersion"] ?? throw new InvalidConfigurationException());
         services.AddCustomSwaggerGen(apiSettings?.ApiVersion ?? throw new InvalidConfigurationException());
 
         var databaseSettings = configuration.GetSection("DatabaseSettings").Get<DatabaseSettings>();

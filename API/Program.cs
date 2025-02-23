@@ -1,5 +1,6 @@
 using API.Configuration;
 using API.Configuration.Swagger;
+using Microsoft.AspNetCore.Identity;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -17,3 +18,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+

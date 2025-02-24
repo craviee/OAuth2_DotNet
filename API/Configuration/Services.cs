@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using API.Configuration.Authorization;
 using API.Configuration.Entity;
 using API.Configuration.Settings;
 using API.Configuration.Swagger;
@@ -15,6 +16,12 @@ public static class Services
 {
     public static void AddServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+        services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
+        services.Configure<ApiSettings>(configuration.GetSection("AppSettings"));
+        services.AddHttpContextAccessor();
+        services.AddScoped<IAuthorizationService, AuthorizationService>();
+        
         var apiSettings = configuration.GetSection("ApiSettings").Get<ApiSettings>();
         
         services.AddCustomSwaggerGen(apiSettings?.ApiVersion ?? throw new InvalidConfigurationException());

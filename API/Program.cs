@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Identity;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+builder.Services.AddOptions(builder.Configuration);
 builder.Services.AddServices(builder.Configuration);
 
 WebApplication app = builder.Build();
